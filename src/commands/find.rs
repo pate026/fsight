@@ -364,8 +364,10 @@ pub fn run(ctx: &Context<'_>, root: &Path, options: &FindOptions) -> Result<Find
     let mut matches = Vec::new();
     let summary = walker.run(|entry| filter.check(entry), |found| matches.push(found));
 
-    // The parallel walk finds entries in no particular order; sort for stable output.
-    matches.sort_unstable_by(|a, b| a.path.cmp(&b.path));
+    // The parallel walk finds entries in no particular order; sort for stable
+    // output. Comparing as paths (component by component) keeps a directory's
+    // contents together: `src/x` sorts before `src-old/y`.
+    matches.sort_unstable_by(|a, b| Path::new(&a.path).cmp(Path::new(&b.path)));
     Ok(FindReport {
         matches,
         summary,

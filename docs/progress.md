@@ -65,3 +65,17 @@ sparse files and non-UTF-8 names).
   entries as GNU find with hidden paths excluded.
 
 **Tests:** 104 in total — 68 unit, 3 doc, 33 integration (16 for find).
+
+## Phase 4 — grep
+
+* `commands/grep.rs`: file collection with the shared walker (`-g` globs,
+  `--max-filesize`), parallel search with an atomic cursor and an in-order
+  reorder buffer, a line-by-line `BufReader` search with before/after context
+  (no duplicates), binary detection on the first 8 KiB, lossy UTF-8 display
+  with exact match spans, and Ctrl-C checks inside long files.
+* Modes: lines (ripgrep-style headings, `N:` matches, `N-` context, `--`
+  separators), `-c` counts, `-l` file names. JSON report with spans and totals.
+* Exit status 0/1/2; broken pipe exits quietly (tested).
+* Checked manually: identical counts to ripgrep on two system directories.
+
+**Tests:** 127 in total — 76 unit, 3 doc, 48 integration (15 for grep).

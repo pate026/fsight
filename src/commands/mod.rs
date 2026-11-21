@@ -17,7 +17,7 @@ use std::sync::atomic::AtomicBool;
 
 use serde::Serialize;
 
-use crate::cli::{Cli, Command, FindArgs, GlobalArgs, ScanArgs};
+use crate::cli::{Cli, Command, FindArgs, GlobalArgs, GrepArgs, ScanArgs};
 use crate::config::Config;
 use crate::error::{Error, Result};
 use crate::output::color::{Palette, Role};
@@ -106,11 +106,8 @@ pub fn run(cli: &Cli, config: &Config, cancel: &AtomicBool) -> Result<Outcome> {
     match command {
         Command::Scan(args) => run_scan(&ctx, args, config, presentation),
         Command::Find(args) => run_find(&ctx, args, presentation),
-        Command::Grep(_)
-        | Command::Dupes(_)
-        | Command::Stats(_)
-        | Command::Tui(_)
-        | Command::Completions(_) => {
+        Command::Grep(args) => run_grep(&ctx, args, presentation),
+        Command::Dupes(_) | Command::Stats(_) | Command::Tui(_) | Command::Completions(_) => {
             let _ = writeln!(
                 io::stderr(),
                 "fsight: this subcommand is not implemented yet"
@@ -186,6 +183,76 @@ fn run_find(ctx: &Context<'_>, args: &FindArgs, presentation: Presentation) -> R
         Outcome::Success
     };
     Ok(finish(report.summary, outcome, presentation))
+}
+
+fn run_grep(ctx: &Context<'_>, args: &GrepArgs, presentation: Presentation) -> Result<Outcome> {
+    let mode = if args.count {
+        grep::GrepMode::Count
+    } else if args.files_with_matches {
+        grep::GrepMode::FilesWithMatches
+    } else {
+        grep::GrepMode::Lines
+    };
+    let options = grep::GrepOptions {
+        pattern: args.pattern.clone(),
+        ignore_case: args.ignore_case,
+        word: args.word_regexp,
+        fixed: args.fixed_strings,
+        before: args.before_context.or(args.context).unwrap_or(0),
+        after: args.after_context.or(args.context).unwrap_or(0),
+        mode,
+        globs: args.globs.clone(),
+        max_filesize: args.max_filesize,
+        binary: args.binary,
+    };
+    let style = grep::TextStyle {
+        mode,
+        separators: options.before > 0 || options.after > 0,
+    };
+    // Compile first, so an invalid pattern fails before any walking.
+    let regex = grep::build_regex(&options)?;
+
+    let (files, walk) = with_progress(ctx, presentation, ("entry", "entries"), || {
+        grep::collect_files(ctx, &args.path, &options)
+    })?;
+    ctx.progress.start_stage("Searching");
+
+    let mut collected = Vec::new();
+    let mut summary = if presentation.format.is_json() {
+        grep::search_files(ctx, &args.path, &files, &regex, &options, &mut |file| {
+            collected.push(file);
+            Ok(())
+        })?
+    } else {
+        let stdout = io::stdout();
+        let mut out = BufWriter::new(stdout.lock());
+        let mut printer = grep::Printer::new(&mut out, presentation.palette, style);
+        // Results stream to stdout while the search runs; a spinner on the
+        // same terminal would garble them, so only show it when redirected.
+        let spinner = presentation.spinner && !io::stdout().is_terminal();
+        with_spinner(spinner, ctx.progress, ("file", "files"), || {
+            grep::search_files(ctx, &args.path, &files, &regex, &options, &mut |file| {
+                printer.print(&file)
+            })
+        })?
+    };
+    summary.errors += walk.errors;
+    summary.interrupted |= walk.interrupted;
+
+    if presentation.format.is_json() {
+        let report = grep::GrepReport {
+            files: collected,
+            summary,
+            style,
+        };
+        print_report(&report, presentation)?;
+    }
+    let outcome = if summary.files_with_matches > 0 {
+        Outcome::Success
+    } else {
+        Outcome::NoMatches
+    };
+    Ok(finish(summary.walk_summary(), outcome, presentation))
 }
 
 /// Runs `work` with a spinner if the presentation allows one.

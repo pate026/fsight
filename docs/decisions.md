@@ -212,3 +212,52 @@ below `.` are shown without the `./` prefix.
 In JSON mode, metadata is read for every match (one extra system call each),
 so consumers always get `size` and `modified` (Unix seconds). In text mode
 the system call is only made when a filter or `--long` needs it.
+
+## Phase 4 — grep
+
+### D31. Collect, then search in parallel with ordered, streaming output
+`grep` first collects the list of files (shared walker, sorted), then N worker
+threads claim files through a shared `AtomicUsize` cursor and send results,
+tagged with the file's index, over a channel. The calling thread reorders them
+with a small `BTreeMap` and prints each file as soon as all earlier files are
+done. Benefits: deterministic output sorted by path (ripgrep's is unordered
+unless `--sort`, which makes it single-threaded), output starts before the
+search ends, and memory holds only results that wait for an earlier file.
+Trade-off: if one early file is very slow (a huge log), later results queue up
+behind it. The search also cannot start until the (fast, metadata-only) walk
+has finished.
+
+### D32. Buffered line-by-line reading, no memory mapping
+Files are read through a 64 KiB `BufReader` with `read_until(b'\n')`. Only the
+current line, the `-B` context lines (in a small ring buffer that reuses its
+allocations) and the matching lines are kept. Memory mapping would need
+`unsafe` (forbidden here) and offers little for line-oriented search. The
+known limit: a single enormous line (for example a minified 50 MB file) is
+held in memory while it is checked.
+
+### D33. Binary detection without reading twice
+The first 8 KiB are read into a buffer and checked for a NUL byte. The search
+then reads `Cursor(head).chain(file)`, so those bytes are not read again.
+Skipped binary files are logged at debug level (`-vvv`) and counted as
+`binary_skipped` in the JSON output.
+
+### D34. Flag semantics
+* `-w` wraps the pattern as `\b(?:PATTERN)\b`. This is simpler than ripgrep's
+  rule and behaves differently only for patterns that start or end with a
+  non-word character.
+* `-c` counts matching *lines* (like grep and rg). `-l` stops reading a file at
+  its first match. `-c` and `-l` cannot be combined.
+* `-A`/`-B` override `-C` for their side.
+* `-g` uses ripgrep's override semantics (via `ignore::overrides`): globs are
+  whitelists, and a leading `!` excludes.
+
+### D35. Output format and progress
+Output always uses the grouped "heading" format, also when piped. For
+machine-readable output use `-c`, `-l` or `--json`. ripgrep switches to
+`path:line:` when piped, but one stable format is easier to learn and test.
+While results stream to a terminal, the spinner is hidden, because it would
+garble the output. It is shown when stdout is redirected.
+
+### D36. Verified against ripgrep
+Counts of files and matching lines equal `rg -c -uu` on `/usr/include`
+(`TODO|FIXME`) and `/usr/share/doc` (`-i -w error`: 1 707 files, 24 015 lines).
