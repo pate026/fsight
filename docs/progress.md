@@ -94,3 +94,17 @@ sparse files and non-UTF-8 names).
 
 **Tests:** 140 in total — 82 unit, 3 doc, 55 integration (7 for dupes,
 including a check that no file is modified).
+
+## Phase 6 — stats
+
+* `commands/stats.rs`: one walk folded into an accumulator. It produces totals
+  by type, the top 15 extensions by size (with an "other" row), size and age
+  histograms, and the 10 largest and 10 oldest files (bounded heaps).
+  Hard-linked files are counted once, deterministically.
+* Text rendering: aligned tables with heading rows and eighth-block bars;
+  timestamps in UTC. JSON uses the same report struct.
+* Insta snapshot of the full text report, built from a fixture with fixed
+  sizes and dates. Sparse files fill the 100M–1G and >1G buckets without using
+  disk space.
+
+**Tests:** 152 in total — 90 unit, 3 doc, 59 integration (4 for stats, including a snapshot).

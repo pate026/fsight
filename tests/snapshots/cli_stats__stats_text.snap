@@ -1,0 +1,64 @@
+---
+source: tests/cli_stats.rs
+expression: out
+---
+Totals
+  Files            16
+  Directories       6
+  Symlinks          1
+  Total size  2.2 GiB
+
+Top extensions by size
+  extension      files        size       %
+  img                1     2.0 GiB   91.0%  ██████████████████████████████
+  mp4                1   200.0 MiB    8.8%  ██▉
+  gz                 1     1.5 MiB    0.0%  ▏
+  jpg                1   300.0 KiB    0.0%  ▏
+  json               1   150.0 KiB    0.0%  ▏
+  rs                 3     9.8 KiB    0.0%  ▏
+  md                 1     2.9 KiB    0.0%  ▏
+  png                1     2.0 KiB    0.0%  ▏
+  (none)             2     1.5 KiB    0.0%  ▏
+  txt                1       700 B    0.0%  ▏
+  log                3       600 B    0.0%  ▏
+
+File sizes
+  size         files       %        size
+  <1K              6   37.5%     2.1 KiB  ██████████████████████████████
+  1K–100K          5   31.2%    15.3 KiB  █████████████████████████
+  100K–1M          2   12.5%   450.0 KiB  ██████████
+  1M–100M          1    6.2%     1.5 MiB  █████
+  100M–1G          1    6.2%   200.0 MiB  █████
+  >1G              1    6.2%     2.0 GiB  █████
+
+File ages (by modification time)
+  age           files       %        size
+  <1 day            1    6.2%       100 B  ██▌
+  <1 week           1    6.2%       200 B  ██▌
+  <1 month          1    6.2%       300 B  ██▌
+  <1 year           1    6.2%   200.0 MiB  ██▌
+  older            12   75.0%     2.0 GiB  ██████████████████████████████
+
+Largest files
+     2.0 GiB  big/disk.img
+   200.0 MiB  big/video.mp4
+     1.5 MiB  data/archive.tar.gz
+   300.0 KiB  images/photo.JPG
+   150.0 KiB  data/records.json
+     7.8 KiB  src/lib.rs
+     2.9 KiB  docs/guide.md
+     2.0 KiB  images/icon.png
+     1.5 KiB  src/main.rs
+     1.1 KiB  LICENSE
+
+Oldest files (UTC)
+  2001-01-01 12:00  src/main.rs
+  2002-01-01 12:00  src/lib.rs
+  2003-01-01 12:00  src/util.rs
+  2004-01-01 12:00  docs/guide.md
+  2005-01-01 12:00  docs/notes.txt
+  2006-01-01 12:00  data/records.json
+  2007-01-01 12:00  data/archive.tar.gz
+  2008-01-01 12:00  images/photo.JPG
+  2009-01-01 12:00  images/icon.png
+  2010-01-01 12:00  LICENSE

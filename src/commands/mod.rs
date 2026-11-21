@@ -17,7 +17,7 @@ use std::sync::atomic::AtomicBool;
 
 use serde::Serialize;
 
-use crate::cli::{Cli, Command, DupesArgs, FindArgs, GlobalArgs, GrepArgs, ScanArgs};
+use crate::cli::{Cli, Command, DupesArgs, FindArgs, GlobalArgs, GrepArgs, ScanArgs, StatsArgs};
 use crate::config::Config;
 use crate::error::{Error, Result};
 use crate::output::color::{Palette, Role};
@@ -108,7 +108,8 @@ pub fn run(cli: &Cli, config: &Config, cancel: &AtomicBool) -> Result<Outcome> {
         Command::Find(args) => run_find(&ctx, args, presentation),
         Command::Grep(args) => run_grep(&ctx, args, presentation),
         Command::Dupes(args) => run_dupes(&ctx, args, presentation),
-        Command::Stats(_) | Command::Tui(_) | Command::Completions(_) => {
+        Command::Stats(args) => run_stats(&ctx, args, presentation),
+        Command::Tui(_) | Command::Completions(_) => {
             let _ = writeln!(
                 io::stderr(),
                 "fsight: this subcommand is not implemented yet"
@@ -264,6 +265,14 @@ fn run_dupes(ctx: &Context<'_>, args: &DupesArgs, presentation: Presentation) ->
     };
     let report = with_progress(ctx, presentation, ("file", "files"), || {
         dupes::run(ctx, &args.path, &options)
+    })?;
+    print_report(&report, presentation)?;
+    Ok(finish(report.summary, Outcome::Success, presentation))
+}
+
+fn run_stats(ctx: &Context<'_>, args: &StatsArgs, presentation: Presentation) -> Result<Outcome> {
+    let report = with_progress(ctx, presentation, ("entry", "entries"), || {
+        stats::run(ctx, &args.path)
     })?;
     print_report(&report, presentation)?;
     Ok(finish(report.summary, Outcome::Success, presentation))

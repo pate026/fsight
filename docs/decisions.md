@@ -297,3 +297,35 @@ at a time. `-j 1` gives sequential hashing. This is noted in the readme.
 A Python script that fully hashes every file and merges hard links found
 the same groups, file counts and wasted bytes on `/usr/share/licenses`
 (192 groups, 956 files, 15.2 MB) and `/usr/share/doc` (95, 253, 3.5 MB).
+
+## Phase 6 — stats
+
+### D42. What stats counts
+* Sizes are file lengths (apparent size): the question is "what kinds of
+  files are here". Use `scan` for disk usage.
+* The root directory itself is not counted, only what is inside it.
+* A file with several hard links is counted once, under the link whose path
+  sorts first. Hard-linked files are held back until the walk ends to make
+  that choice deterministic. Extra links appear as "(N extra hard links
+  counted once)". This keeps every number consistent: histogram counts add up
+  to "Files", and extension sizes add up to "Total size".
+* Directories, symlinks and other entries are counted in the totals but not in
+  the histograms or the extension table.
+
+### D43. Buckets and labels
+Size buckets have exclusive upper bounds (`<1K` is 0–1023 bytes, and `>1G`
+starts at exactly 1 GiB), using the brief's labels. Age buckets use 1, 7, 30 and
+365 days. Files whose modification time lies in the future (clock skew) count
+as `<1 day`. Extensions are lowercased (`JPG` = `jpg`). Files without an
+extension, including dotfiles, are grouped as `(none)`. Extensions beyond the
+top 15 are combined into one "(N other extensions)" row.
+
+### D44. Histograms
+Bars are scaled so the fullest bucket fills 30 cells, using eighth-block
+characters for smooth lengths. A non-zero bucket always shows at least a thin
+sliver. Each table has a dim heading row. Percentages have one decimal and are
+computed with integers.
+
+### D45. Bounded memory
+`stats` never keeps a list of all files. It keeps counters, a map of
+extensions, and two "top 10" min-heaps (`TopK`), each costing O(log 10) per file.
