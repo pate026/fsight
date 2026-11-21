@@ -162,3 +162,53 @@ It holds the atomic progress counters (updated by workers) and the
 indicatif spinner (a scoped thread that shows them on stderr). The spinner
 thread stops when a channel is disconnected, which happens even when the work
 panics, so it can never be left running.
+
+## Phase 3 — find
+
+### D23. A plain word matches anywhere in the name
+A glob without wildcards (`*?[{`) is treated as a substring. So `fsight find
+report` finds `annual-report.pdf`, which is what people expect (it is also
+fd's default behaviour). A real glob such as `report*` still has to match the
+whole name.
+
+### D24. Glob semantics are globset's
+Globs are compiled by `globset` (as in ripgrep and fd) into a regex that
+matches raw bytes, so file names that are not valid UTF-8 can still match.
+Consequences: `?` matches one *byte* (so `?.txt` does not match `ä.txt`), and
+case-insensitive globs fold ASCII letters only. Regexes (`--regex`) are
+Unicode-aware. With `--full-path`, `*` does not cross `/` (use `**`), and the
+pattern is matched against the path as displayed (for example `src/main.rs`
+when searching `.`), not the absolute path.
+
+### D25. Smart case ignores escaped characters
+"Case-insensitive if the pattern is all lowercase" skips the character after
+a backslash, so `\W` and `\D` (regex classes) do not make a pattern
+case-sensitive. `\p{Lu}` would; this simple rule is good enough here and
+easy to read.
+
+### D26. `--size` is inclusive and applies to regular files only
+`+SIZE` means "at least", `-SIZE` "at most", and a bare `SIZE` "exactly"
+(fd's semantics). Directories and symlinks never pass a size filter, because
+their "size" is not meaningful content. Several `--size` filters combine with
+AND, so `--size +1M --size -10M` selects a range.
+
+### D27. Results are collected and sorted, not streamed
+`find` collects matches and prints them sorted by path. Output is then
+deterministic (the parallel walk has no stable order) and matches the
+"report struct, then render" architecture. The cost: nothing is printed until
+the walk finishes. The spinner on stderr shows that work is happening.
+Memory is proportional to the number of *matches* (paths only).
+
+### D28. Extension filter
+`-e` compares the end of the name ASCII-case-insensitively, so `-e tar.gz`
+works. Dotfiles such as `.bashrc` have no extension. A leading dot in the
+argument is optional (`-e .rs` = `-e rs`).
+
+### D29. The search root is not a result
+Like fd, `fsight find` lists what is *inside* PATH, not PATH itself. Paths
+below `.` are shown without the `./` prefix.
+
+### D30. JSON always includes size and modification time
+In JSON mode, metadata is read for every match (one extra system call each),
+so consumers always get `size` and `modified` (Unix seconds). In text mode
+the system call is only made when a filter or `--long` needs it.

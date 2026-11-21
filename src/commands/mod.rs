@@ -17,7 +17,7 @@ use std::sync::atomic::AtomicBool;
 
 use serde::Serialize;
 
-use crate::cli::{Cli, Command, GlobalArgs, ScanArgs};
+use crate::cli::{Cli, Command, FindArgs, GlobalArgs, ScanArgs};
 use crate::config::Config;
 use crate::error::{Error, Result};
 use crate::output::color::{Palette, Role};
@@ -105,8 +105,8 @@ pub fn run(cli: &Cli, config: &Config, cancel: &AtomicBool) -> Result<Outcome> {
 
     match command {
         Command::Scan(args) => run_scan(&ctx, args, config, presentation),
-        Command::Find(_)
-        | Command::Grep(_)
+        Command::Find(args) => run_find(&ctx, args, presentation),
+        Command::Grep(_)
         | Command::Dupes(_)
         | Command::Stats(_)
         | Command::Tui(_)
@@ -150,6 +150,42 @@ fn run_scan(
     })?;
     print_report(&report, presentation)?;
     Ok(finish(report.summary, Outcome::Success, presentation))
+}
+
+fn run_find(ctx: &Context<'_>, args: &FindArgs, presentation: Presentation) -> Result<Outcome> {
+    let case = match (args.case_sensitive, args.ignore_case) {
+        (true, _) => find::CaseMode::Sensitive,
+        (false, true) => find::CaseMode::Insensitive,
+        (false, false) => find::CaseMode::Smart,
+    };
+    let options = find::FindOptions {
+        pattern: args.pattern.clone(),
+        syntax: if args.regex {
+            find::PatternSyntax::Regex
+        } else {
+            find::PatternSyntax::Glob
+        },
+        case,
+        full_path: args.full_path,
+        types: args.types.clone(),
+        extensions: args.extensions.clone(),
+        sizes: args.size.clone(),
+        newer: args.newer,
+        older: args.older,
+        max_depth: args.max_depth,
+        long: args.long,
+        with_metadata: presentation.format.is_json(),
+    };
+    let report = with_progress(ctx, presentation, ("entry", "entries"), || {
+        find::run(ctx, &args.path, &options)
+    })?;
+    print_report(&report, presentation)?;
+    let outcome = if report.matches.is_empty() {
+        Outcome::NoMatches
+    } else {
+        Outcome::Success
+    };
+    Ok(finish(report.summary, outcome, presentation))
 }
 
 /// Runs `work` with a spinner if the presentation allows one.

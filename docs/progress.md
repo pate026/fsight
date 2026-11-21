@@ -49,3 +49,19 @@ exits successfully.
 **Tests:** 77 in total — 57 unit, 3 doc, 17 integration (14 for scan,
 including 2 insta snapshots, an unreadable directory, symlink loops, hard links,
 sparse files and non-UTF-8 names).
+
+## Phase 3 — find
+
+* `commands/find.rs`: glob (via globset) or regex patterns compiled to
+  `regex::bytes::Regex`; smart case, `-s`/`-i`, substring matching for plain
+  words, `--full-path` with literal separators; type, extension, size, newer,
+  older and max-depth filters. Metadata is read only when needed.
+* Output: one path per line, sorted, with the match highlighted (never inside a
+  UTF-8 character). `--long` adds size and UTC time. JSON includes type, size
+  and Unix mtime.
+* Exit status 0/1/2. A broken pipe (`fsight find | head`) exits quietly with
+  status 0, checked both by a test and manually on `/usr/share`.
+* Checked manually: `fsight find '*' /usr/share` returns the same 109 570
+  entries as GNU find with hidden paths excluded.
+
+**Tests:** 104 in total — 68 unit, 3 doc, 33 integration (16 for find).
