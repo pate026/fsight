@@ -166,3 +166,15 @@ on an in-memory terminal from 0×0 up), 3 doc, 69 integration.
   outside tests.
 
 **Tests:** 190 (unchanged; documentation only).
+
+## Phase 10 — CI and release
+
+* `.github/workflows/ci.yml`: fmt, clippy (`-D warnings`), tests and a release
+  build on Ubuntu and macOS (YAML validated locally; GitHub runs it).
+* `cargo build --release`: 2 min 08 s, peak memory about 400 MB, binary
+  **4 670 016 bytes (4.5 MiB)**, stripped, thin LTO.
+* Checked with `cargo run --release`: `scan .`, `find`, `grep`, `dupes`,
+  `stats`, `tui` (driven on a pseudo-terminal) and `completions bash` all work
+  on this machine.
+
+**Tests:** 190 (unchanged).

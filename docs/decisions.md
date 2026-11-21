@@ -418,3 +418,20 @@ errors are printed normally.
 ### D56. Memory
 Because the user can navigate anywhere, the TUI keeps the full tree (about
 100 bytes per entry plus the name, comparable to ncdu).
+
+## Phase 10 — CI and release
+
+### D57. CI
+`.github/workflows/ci.yml` runs the three quality gates (fmt, clippy with
+`-D warnings`, tests) plus a release build on `ubuntu-latest` and
+`macos-latest`, on every push and pull request, with the latest stable Rust
+(`dtolnay/rust-toolchain`) and `Swatinem/rust-cache`. Platform notes: the only
+Linux-only test is the one with a non-UTF-8 file name (macOS's APFS rejects
+such names). Tests that need a non-root user skip themselves when run as root.
+The workflow could not be executed locally (no runner, and `actionlint` is not
+installed). Its YAML was checked by parsing it.
+
+### D58. Release profile
+As the brief specifies: thin LTO, one codegen unit, stripped symbols. On this
+machine `cargo build --release` takes about 2 minutes from a warm dependency
+cache (peak memory about 400 MB), and the binary is 4.5 MiB.
