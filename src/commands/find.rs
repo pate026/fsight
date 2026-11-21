@@ -190,7 +190,7 @@ fn has_glob_wildcards(pattern: &str) -> bool {
 
 /// Does the file name end in `.ext`? `ext` must be lowercase ASCII without
 /// the dot. Dotfiles such as `.bashrc` have no extension.
-fn has_extension(name: &[u8], ext: &str) -> bool {
+pub fn has_extension(name: &[u8], ext: &str) -> bool {
     let ext = ext.as_bytes();
     name.len() > ext.len() + 1
         && name[name.len() - ext.len() - 1] == b'.'

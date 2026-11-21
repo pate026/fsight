@@ -79,3 +79,18 @@ sparse files and non-UTF-8 names).
 * Checked manually: identical counts to ripgrep on two system directories.
 
 **Tests:** 127 in total — 76 unit, 3 doc, 48 integration (15 for grep).
+
+## Phase 5 — dupes
+
+* `commands/dupes.rs`: read-only duplicate detection in the three required
+  stages (size → BLAKE3 of the first 16 KiB → full BLAKE3), each stage in
+  parallel with rayon. Hard links are merged before hashing and reported
+  separately. Results sorted by wasted space, with the summary line
+  `Found N duplicate groups, M files, X wasted`.
+* Size, extension and empty-file filters; JSON report; unreadable files are
+  counted as warnings; Ctrl-C stops hashing and reports partial results.
+* Checked manually: identical results to a naive "hash everything" script on two
+  system directories.
+
+**Tests:** 140 in total — 82 unit, 3 doc, 55 integration (7 for dupes,
+including a check that no file is modified).

@@ -261,3 +261,39 @@ garble the output. It is shown when stdout is redirected.
 ### D36. Verified against ripgrep
 Counts of files and matching lines equal `rg -c -uu` on `/usr/include`
 (`TODO|FIXME`) and `/usr/share/doc` (`-i -w error`: 1 707 files, 24 015 lines).
+
+## Phase 5 — dupes
+
+### D37. The three stages, and where hard links are handled
+Exactly as the brief requires: (1) group by size, (2) BLAKE3 of the first
+16 KiB, (3) full BLAKE3, with groups of one dropped after every stage.
+Stages 2 and 3 share one generic function (`Stage::refine`) that splits groups
+by a key computed in parallel with rayon. Files of at most 16 KiB skip
+stage 3, because stage 2 already hashed them completely. Hard links are merged
+in stage 1, before anything is read: a file and its hard links become one
+"inode" with several names, shown as `(+1 hard link: ...)`, and they are never
+counted as duplicates of each other.
+
+### D38. The hash functions are parameters
+`confirm_duplicates` takes the prefix and full hash functions as generic
+parameters. The real ones read files, and the unit tests pass in-memory fakes
+that count their calls. That is how the tests prove each stage really
+eliminates candidates before the next, more expensive stage.
+
+### D39. Counting rules
+* "files" in the summary counts distinct files (inodes) in duplicate groups.
+  Hard links are shown but not counted.
+* "wasted" is `size × (copies − 1)` per group.
+* Empty files are skipped unless `--include-empty`, whatever `--min-size` says.
+  When included, all empty files form one group with 0 bytes wasted.
+* Groups are sorted by wasted space, then size, then first path.
+
+### D40. Parallel hashing on a hard disk
+Hashing runs on all worker threads, as the brief asks. On an HDD, parallel
+reads of different files cause seeks and can be slower than reading one file
+at a time. `-j 1` gives sequential hashing. This is noted in the readme.
+
+### D41. Verified against a naive implementation
+A Python script that fully hashes every file and merges hard links found
+the same groups, file counts and wasted bytes on `/usr/share/licenses`
+(192 groups, 956 files, 15.2 MB) and `/usr/share/doc` (95, 253, 3.5 MB).

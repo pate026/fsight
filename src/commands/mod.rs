@@ -17,7 +17,7 @@ use std::sync::atomic::AtomicBool;
 
 use serde::Serialize;
 
-use crate::cli::{Cli, Command, FindArgs, GlobalArgs, GrepArgs, ScanArgs};
+use crate::cli::{Cli, Command, DupesArgs, FindArgs, GlobalArgs, GrepArgs, ScanArgs};
 use crate::config::Config;
 use crate::error::{Error, Result};
 use crate::output::color::{Palette, Role};
@@ -107,7 +107,8 @@ pub fn run(cli: &Cli, config: &Config, cancel: &AtomicBool) -> Result<Outcome> {
         Command::Scan(args) => run_scan(&ctx, args, config, presentation),
         Command::Find(args) => run_find(&ctx, args, presentation),
         Command::Grep(args) => run_grep(&ctx, args, presentation),
-        Command::Dupes(_) | Command::Stats(_) | Command::Tui(_) | Command::Completions(_) => {
+        Command::Dupes(args) => run_dupes(&ctx, args, presentation),
+        Command::Stats(_) | Command::Tui(_) | Command::Completions(_) => {
             let _ = writeln!(
                 io::stderr(),
                 "fsight: this subcommand is not implemented yet"
@@ -253,6 +254,19 @@ fn run_grep(ctx: &Context<'_>, args: &GrepArgs, presentation: Presentation) -> R
         Outcome::NoMatches
     };
     Ok(finish(summary.walk_summary(), outcome, presentation))
+}
+
+fn run_dupes(ctx: &Context<'_>, args: &DupesArgs, presentation: Presentation) -> Result<Outcome> {
+    let options = dupes::DupesOptions {
+        min_size: args.min_size,
+        extensions: args.extensions.clone(),
+        include_empty: args.include_empty,
+    };
+    let report = with_progress(ctx, presentation, ("file", "files"), || {
+        dupes::run(ctx, &args.path, &options)
+    })?;
+    print_report(&report, presentation)?;
+    Ok(finish(report.summary, Outcome::Success, presentation))
 }
 
 /// Runs `work` with a spinner if the presentation allows one.
