@@ -90,6 +90,10 @@ pub struct GlobalArgs {
     #[arg(short = 'L', long, global = true)]
     pub follow: bool,
 
+    /// Do not cross into other file systems (like du -x; skips /proc etc. when scanning /)
+    #[arg(short = 'x', long, global = true)]
+    pub one_file_system: bool,
+
     /// Do not show progress output
     #[arg(short, long, global = true)]
     pub quiet: bool,

@@ -42,10 +42,15 @@ pub enum DurationError {
 }
 
 /// The main error type of the library.
+///
+/// Variants that wrap another error mark it with `#[source]` and do *not*
+/// repeat it in their message: whoever prints the error walks the chain of
+/// sources (`main.rs` uses anyhow's `{:#}`), so repeating it would print the
+/// cause twice.
 #[derive(Debug, Error)]
 pub enum Error {
     /// The path given on the command line does not exist or cannot be read.
-    #[error("cannot access '{}': {source}", path.display())]
+    #[error("cannot access '{}'", path.display())]
     Path {
         path: PathBuf,
         #[source]
@@ -61,11 +66,11 @@ pub enum Error {
     Config(String),
 
     /// Writing the results (usually to stdout) failed.
-    #[error("cannot write output: {0}")]
+    #[error("cannot write output")]
     Output(#[source] io::Error),
 
     /// The terminal user interface failed.
-    #[error("terminal error: {0}")]
+    #[error("terminal error")]
     Terminal(#[source] io::Error),
 }
 

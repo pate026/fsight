@@ -11,6 +11,7 @@
 //! * [`commands`] — `scan`, `find`, `grep`, `dupes` and `stats`.
 //! * [`tui`] — the interactive explorer.
 //! * [`output`] — text and JSON rendering, colors, bars.
+//! * [`progress`] — progress counters and the stderr spinner.
 //! * [`size`], [`duration`] — parsing and formatting helpers.
 //! * [`error`] — error types.
 
@@ -26,6 +27,7 @@ pub mod config;
 pub mod duration;
 pub mod error;
 pub mod output;
+pub mod progress;
 pub mod size;
 pub mod tui;
 pub mod walk;

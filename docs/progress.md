@@ -25,3 +25,27 @@ One entry per phase: what was done, the test count, and anything notable.
 **Notes:** In this phase Cargo reports some dependencies as unused. They are
 used from phase 2 onwards. The warnings are informational, and clippy still
 exits successfully.
+
+## Phase 2 — Walker and scan
+
+* `walk.rs`: parallel walker on `ignore` with hidden, ignore-file,
+  follow-symlinks, one-file-system, max-depth and glob options. Map on worker
+  threads, fold on the calling thread over a bounded channel. Unreadable
+  entries and symlink loops are counted and logged, and the Ctrl-C flag is
+  checked for every entry.
+* `progress.rs`: atomic counters plus an indicatif spinner on stderr (only on
+  a TTY, not with `--quiet`, `--json` or `-v`).
+* `commands/scan.rs`: arena-based `DiskTree` with out-of-order insertion,
+  folding below the display depth, deterministic hard-link deduplication,
+  one-pass size roll-up, and a report with top-N and min-size collapsing.
+* `output/tree.rs`: aligned columns (size, percentage of parent, bar) and
+  tree-drawing prefixes. JSON comes from the same report struct.
+* Dispatcher in `commands/mod.rs`: options from flags and config, spinner,
+  buffered stdout, and warnings on stderr ("N entries could not be read",
+  "interrupted"), with exit status 130 after Ctrl-C.
+* Checked manually: totals equal `du` on several `/usr` subtrees. Ctrl-C
+  prints partial results and exits with 130.
+
+**Tests:** 77 in total — 57 unit, 3 doc, 17 integration (14 for scan,
+including 2 insta snapshots, an unreadable directory, symlink loops, hard links,
+sparse files and non-UTF-8 names).

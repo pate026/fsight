@@ -1,0 +1,8 @@
+---
+source: tests/cli_scan.rs
+expression: out
+---
+64.6 KiB 100%  ██████████  .
+42.5 KiB  65%  ██████░░░░  ├── assets
+17.6 KiB  27%  ██░░░░░░░░  ├── src
+ 4.6 KiB   7%  ░░░░░░░░░░  └── (2 other items)

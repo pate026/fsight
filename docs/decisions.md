@@ -95,3 +95,70 @@ A second Ctrl-C exits immediately.
 * The project brief (`fsight-prompt.md`) is committed. It documents the
   requirements this code was built against.
 * No license file was added: choosing a license is the owner's decision.
+
+## Phase 2 — Walker and scan
+
+### D13. One walker, "parallel map, sequential fold"
+`walk::Walker::run(map, consume)` runs `map` on the `ignore` crate's worker
+threads and sends the results through a bounded crossbeam channel to `consume`,
+which runs on the calling thread. Commands put the parallel work (metadata,
+matching) in `map` and build their results in `consume` without any locks.
+The bounded channel provides back-pressure, so memory cannot grow without limit.
+
+### D14. `.gitignore` is honored outside git repositories
+`ignore` normally applies `.gitignore` only inside a git repository
+(`require_git(true)`, also ripgrep's and fd's default). fsight sets
+`require_git(false)`: if a `.gitignore` is present, it is respected. This is
+more predictable for a disk tool (a downloaded source tree behaves the same
+whether or not it was cloned), and fixtures do not need `git init`.
+
+### D15. `scan` follows the global filters, unlike `du`
+The brief makes "skip hidden" and "respect ignore files" global defaults, so
+`fsight scan` by default does **not** count hidden or git-ignored files (for
+example `target/` in a Rust project). This differs from `du` and `dust`.
+`fsight scan --hidden --no-ignore` gives the du-like total; the help text and
+readme say so, and the config file can make it the default. *Owner may want to
+review:* a scan-specific default could be argued for.
+
+### D16. Apparent size counts file contents only
+With `--apparent-size`, directories contribute 0 bytes of their own. A
+directory's own length is a file-system detail (4096 on ext4, variable on
+btrfs), not content. This keeps totals identical across file systems (and
+therefore testable), and on this machine it equals `du -s --apparent-size`
+exactly. In the default allocated mode, directories' own blocks are counted,
+as `du` does.
+
+### D17. Hard links: counted once, credited deterministically
+A file with several hard links is counted once. Its size is credited to the
+link whose relative path sorts first. "Whichever the walk saw first" would
+change from run to run, because the parallel walk has no fixed order. With
+`--follow`, every entry is deduplicated by (device, inode), because the same
+file can then also be reached through different symlinks.
+
+### D18. Memory stays proportional to the displayed tree
+`scan` stores only nodes down to the display depth. Deeper entries are added
+to their ancestor at that depth. The TUI asks for unlimited depth because the
+user can navigate anywhere.
+
+### D19. Verified against `du`
+Allocated totals were compared with `du -s --block-size=1` on
+`/usr/share/doc`, `/usr/lib64` (3.6 GB, 22 848 entries) and `/usr/include`,
+using `--hidden --no-ignore`: identical to the byte.
+
+### D20. Small presentation rules
+* Percentages and bars round down, so a bar is only full at 100%. The root is
+  always shown as 100%.
+* The `(N other items)` row also contains entries hidden by `--min-size`. The
+  row itself is hidden when its total is below `--min-size`.
+* `--top 0` shows all children.
+* Ties in size are broken by name, so the output is stable.
+
+### D21. Extra flag `-x/--one-file-system`
+Like `du -x`. Without it, `fsight scan /` or `fsight tui /` descends into
+`/proc`, `/sys` and other virtual file systems.
+
+### D22. `src/progress.rs` added to the module layout
+It holds the atomic progress counters (updated by workers) and the
+indicatif spinner (a scoped thread that shows them on stderr). The spinner
+thread stops when a channel is disconnected, which happens even when the work
+panics, so it can never be left running.
