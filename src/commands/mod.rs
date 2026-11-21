@@ -15,6 +15,7 @@ pub mod stats;
 use std::io::{self, BufWriter, IsTerminal, Write};
 use std::sync::atomic::AtomicBool;
 
+use clap::CommandFactory;
 use serde::Serialize;
 
 use crate::cli::{Cli, Command, DupesArgs, FindArgs, GlobalArgs, GrepArgs, ScanArgs, StatsArgs};
@@ -109,7 +110,8 @@ pub fn run(cli: &Cli, config: &Config, cancel: &AtomicBool) -> Result<Outcome> {
         Command::Grep(args) => run_grep(&ctx, args, presentation),
         Command::Dupes(args) => run_dupes(&ctx, args, presentation),
         Command::Stats(args) => run_stats(&ctx, args, presentation),
-        Command::Tui(_) | Command::Completions(_) => {
+        Command::Completions(args) => print_completions(args.shell),
+        Command::Tui(_) => {
             let _ = writeln!(
                 io::stderr(),
                 "fsight: this subcommand is not implemented yet"
@@ -276,6 +278,19 @@ fn run_stats(ctx: &Context<'_>, args: &StatsArgs, presentation: Presentation) ->
     })?;
     print_report(&report, presentation)?;
     Ok(finish(report.summary, Outcome::Success, presentation))
+}
+
+/// Prints a completion script for `shell`.
+fn print_completions(shell: clap_complete::Shell) -> Result<Outcome> {
+    // Generate into memory first: clap_complete panics if writing fails,
+    // and `fsight completions bash | head` must not panic.
+    let mut script = Vec::new();
+    clap_complete::generate(shell, &mut Cli::command(), "fsight", &mut script);
+    let mut out = io::stdout().lock();
+    out.write_all(&script)
+        .and_then(|()| out.flush())
+        .map_err(Error::Output)?;
+    Ok(Outcome::Success)
 }
 
 /// Runs `work` with a spinner if the presentation allows one.

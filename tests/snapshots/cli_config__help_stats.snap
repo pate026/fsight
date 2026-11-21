@@ -1,0 +1,69 @@
+---
+source: tests/cli_config.rs
+expression: help
+---
+Show statistics: file types, size and age histograms, largest and oldest files
+
+Usage: fsight stats [OPTIONS] [PATH]
+
+Arguments:
+  [PATH]
+          Directory to analyze
+          
+          [default: .]
+
+Options:
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --json
+          Print results as JSON (pretty-printed unless --compact)
+
+      --compact
+          Print JSON on a single line (implies --json)
+
+      --no-color
+          Disable colors (same as --color never; NO_COLOR is also respected)
+
+      --color <WHEN>
+          When to use colors
+
+          Possible values:
+          - auto:   Color only when writing to a terminal
+          - always: Always color, even when piping (useful with `less -R`)
+          - never:  Never color
+
+  -j, --threads <N>
+          Number of worker threads [default: number of logical CPUs]
+
+      --hidden
+          Include hidden files and directories
+
+      --no-hidden
+          Skip hidden files and directories (overrides `hidden = true` in the config)
+
+      --no-ignore
+          Do not respect .gitignore and .ignore files
+
+      --ignore
+          Respect .gitignore and .ignore files (overrides `no_ignore = true` in the config)
+
+  -L, --follow
+          Follow symbolic links (symlink loops are detected and skipped)
+
+  -x, --one-file-system
+          Do not cross into other file systems (like du -x; skips /proc etc. when scanning /)
+
+  -q, --quiet
+          Do not show progress output
+
+  -v, --verbose...
+          Show more log output on stderr (-v warnings, -vv info, -vvv debug, -vvvv trace)
+
+Examples:
+  fsight stats                    Statistics for the current directory
+  fsight stats ~/Documents        Statistics for another directory
+  fsight stats --hidden --json    Include hidden files, print JSON
+
+Sizes in this report are file lengths (apparent sizes).

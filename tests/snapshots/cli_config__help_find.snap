@@ -1,0 +1,115 @@
+---
+source: tests/cli_config.rs
+expression: help
+---
+Find files and directories by name, type, size and age
+
+Usage: fsight find [OPTIONS] [PATTERN] [PATH]
+
+Arguments:
+  [PATTERN]
+          Glob (or regex with --regex) matched against names; omit to list everything
+
+  [PATH]
+          Directory to search
+          
+          [default: .]
+
+Options:
+  -r, --regex
+          Treat PATTERN as a regular expression instead of a glob
+
+  -s, --case-sensitive
+          Match case-sensitively (default: smart case — insensitive unless PATTERN has uppercase)
+
+  -i, --ignore-case
+          Match case-insensitively
+
+  -t, --type <TYPE>
+          Only show entries of this type: f (file), d (directory), l (symlink); repeatable
+
+          Possible values:
+          - f: Regular files
+          - d: Directories
+          - l: Symbolic links
+
+  -e, --ext <EXT>
+          Only show entries with this extension (case-insensitive); repeatable
+
+      --size <[+|-]SIZE>
+          Only files of this size: +SIZE at least, -SIZE at most, SIZE exactly; repeatable
+
+      --newer <DURATION>
+          Only entries modified within the last DURATION (e.g. 30m, 3h, 2d, 1w)
+
+      --older <DURATION>
+          Only entries modified more than DURATION ago
+
+      --max-depth <N>
+          Descend at most N levels below PATH (1 = direct children only)
+
+  -p, --full-path
+          Match PATTERN against the whole displayed path instead of just the name
+
+  -l, --long
+          Long listing: size, modification time (UTC) and path
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --json
+          Print results as JSON (pretty-printed unless --compact)
+
+      --compact
+          Print JSON on a single line (implies --json)
+
+      --no-color
+          Disable colors (same as --color never; NO_COLOR is also respected)
+
+      --color <WHEN>
+          When to use colors
+
+          Possible values:
+          - auto:   Color only when writing to a terminal
+          - always: Always color, even when piping (useful with `less -R`)
+          - never:  Never color
+
+  -j, --threads <N>
+          Number of worker threads [default: number of logical CPUs]
+
+      --hidden
+          Include hidden files and directories
+
+      --no-hidden
+          Skip hidden files and directories (overrides `hidden = true` in the config)
+
+      --no-ignore
+          Do not respect .gitignore and .ignore files
+
+      --ignore
+          Respect .gitignore and .ignore files (overrides `no_ignore = true` in the config)
+
+  -L, --follow
+          Follow symbolic links (symlink loops are detected and skipped)
+
+  -x, --one-file-system
+          Do not cross into other file systems (like du -x; skips /proc etc. when scanning /)
+
+  -q, --quiet
+          Do not show progress output
+
+  -v, --verbose...
+          Show more log output on stderr (-v warnings, -vv info, -vvv debug, -vvvv trace)
+
+Examples:
+  fsight find '*.rs'                    Rust files (smart case: '*.rs' matches main.RS)
+  fsight find report -t f               Files whose name contains 'report'
+  fsight find -r '^test_.*\.py$'        Regex instead of glob
+  fsight find '*' ~/Videos --size +1G   Files of at least 1 GiB
+  fsight find -e jpg -e png --newer 2d  Images changed in the last two days
+  fsight find '*.log' --older 4w -l     Old log files with size and date
+  fsight find -p '**/src/**/*.rs'       Match against the full path
+
+A pattern without glob characters matches anywhere in the name.
+Exit status: 0 if something was found, 1 if nothing matched, 2 on error.

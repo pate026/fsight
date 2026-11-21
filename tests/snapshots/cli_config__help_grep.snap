@@ -1,0 +1,108 @@
+---
+source: tests/cli_config.rs
+expression: help
+---
+Search file contents with a regular expression
+
+Usage: fsight grep [OPTIONS] <PATTERN> [PATH]
+
+Arguments:
+  <PATTERN>
+          Regular expression to search for (a literal string with -F)
+
+  [PATH]
+          Directory or file to search
+          
+          [default: .]
+
+Options:
+  -i, --ignore-case
+          Search case-insensitively
+
+  -w, --word-regexp
+          Only match whole words
+
+  -F, --fixed-strings
+          Treat PATTERN as a literal string, not a regular expression
+
+  -C, --context <N>
+          Show N lines before and after each match
+
+  -A, --after-context <N>
+          Show N lines after each match
+
+  -B, --before-context <N>
+          Show N lines before each match
+
+  -c, --count
+          Only print the number of matching lines in each file
+
+  -l, --files-with-matches
+          Only print the names of files that contain a match
+
+  -g, --glob <GLOB>
+          Only search files matching GLOB; prefix with ! to exclude; repeatable
+
+      --max-filesize <SIZE>
+          Skip files larger than SIZE (e.g. 10M)
+
+      --binary
+          Search binary files too (files with a NUL byte in the first 8 KiB are skipped by default)
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --json
+          Print results as JSON (pretty-printed unless --compact)
+
+      --compact
+          Print JSON on a single line (implies --json)
+
+      --no-color
+          Disable colors (same as --color never; NO_COLOR is also respected)
+
+      --color <WHEN>
+          When to use colors
+
+          Possible values:
+          - auto:   Color only when writing to a terminal
+          - always: Always color, even when piping (useful with `less -R`)
+          - never:  Never color
+
+  -j, --threads <N>
+          Number of worker threads [default: number of logical CPUs]
+
+      --hidden
+          Include hidden files and directories
+
+      --no-hidden
+          Skip hidden files and directories (overrides `hidden = true` in the config)
+
+      --no-ignore
+          Do not respect .gitignore and .ignore files
+
+      --ignore
+          Respect .gitignore and .ignore files (overrides `no_ignore = true` in the config)
+
+  -L, --follow
+          Follow symbolic links (symlink loops are detected and skipped)
+
+  -x, --one-file-system
+          Do not cross into other file systems (like du -x; skips /proc etc. when scanning /)
+
+  -q, --quiet
+          Do not show progress output
+
+  -v, --verbose...
+          Show more log output on stderr (-v warnings, -vv info, -vvv debug, -vvvv trace)
+
+Examples:
+  fsight grep 'fn main'                 Search the current directory
+  fsight grep -i error /var/log -C 2    Case-insensitive, two lines of context
+  fsight grep -w TODO -g '*.rs'         Whole word, only in Rust files
+  fsight grep -F 'a.b(c)' -l            Literal string, list matching files
+  fsight grep unsafe -g '!target/**' -c Count matches, excluding target/
+
+Binary files (a NUL byte in the first 8 KiB) are skipped unless --binary.
+Exit status: 0 if a match was found, 1 if nothing matched, 2 on error.

@@ -1,0 +1,83 @@
+---
+source: tests/cli_config.rs
+expression: help
+---
+Report duplicate files (read-only: never deletes or changes anything)
+
+Usage: fsight dupes [OPTIONS] [PATH]
+
+Arguments:
+  [PATH]
+          Directory to analyze
+          
+          [default: .]
+
+Options:
+      --min-size <SIZE>
+          Ignore files smaller than SIZE
+          
+          [default: 1]
+
+  -e, --ext <EXT>
+          Only consider files with this extension (case-insensitive); repeatable
+
+      --include-empty
+          Also report empty files (all empty files are identical)
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --json
+          Print results as JSON (pretty-printed unless --compact)
+
+      --compact
+          Print JSON on a single line (implies --json)
+
+      --no-color
+          Disable colors (same as --color never; NO_COLOR is also respected)
+
+      --color <WHEN>
+          When to use colors
+
+          Possible values:
+          - auto:   Color only when writing to a terminal
+          - always: Always color, even when piping (useful with `less -R`)
+          - never:  Never color
+
+  -j, --threads <N>
+          Number of worker threads [default: number of logical CPUs]
+
+      --hidden
+          Include hidden files and directories
+
+      --no-hidden
+          Skip hidden files and directories (overrides `hidden = true` in the config)
+
+      --no-ignore
+          Do not respect .gitignore and .ignore files
+
+      --ignore
+          Respect .gitignore and .ignore files (overrides `no_ignore = true` in the config)
+
+  -L, --follow
+          Follow symbolic links (symlink loops are detected and skipped)
+
+  -x, --one-file-system
+          Do not cross into other file systems (like du -x; skips /proc etc. when scanning /)
+
+  -q, --quiet
+          Do not show progress output
+
+  -v, --verbose...
+          Show more log output on stderr (-v warnings, -vv info, -vvv debug, -vvvv trace)
+
+Examples:
+  fsight dupes ~/Pictures               Duplicate files, most wasted space first
+  fsight dupes . --min-size 1M          Ignore files smaller than 1 MiB
+  fsight dupes -e jpg -e jpeg           Only JPEG files
+  fsight dupes --json > dupes.json      Machine-readable report
+
+Files are compared by size, then by a BLAKE3 hash of their first 16 KiB, then
+by a full BLAKE3 hash. Hard links to the same file are not duplicates. This
+command only reads files; it never deletes, moves or modifies anything.

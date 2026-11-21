@@ -1,0 +1,84 @@
+---
+source: tests/cli_config.rs
+expression: help
+---
+Show a disk usage tree, largest entries first
+
+Usage: fsight scan [OPTIONS] [PATH]
+
+Arguments:
+  [PATH]
+          Directory to analyze
+          
+          [default: .]
+
+Options:
+  -d, --depth <N>
+          Number of levels to display below PATH; sizes always include the whole tree [default: 3]
+
+  -n, --top <N>
+          Show only the N largest entries per directory, 0 for all [default: 10]
+
+      --apparent-size
+          Count file lengths instead of the disk space actually allocated
+
+      --min-size <SIZE>
+          Hide entries smaller than SIZE (e.g. 200B, 10K, 5M, 1.5G)
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --json
+          Print results as JSON (pretty-printed unless --compact)
+
+      --compact
+          Print JSON on a single line (implies --json)
+
+      --no-color
+          Disable colors (same as --color never; NO_COLOR is also respected)
+
+      --color <WHEN>
+          When to use colors
+
+          Possible values:
+          - auto:   Color only when writing to a terminal
+          - always: Always color, even when piping (useful with `less -R`)
+          - never:  Never color
+
+  -j, --threads <N>
+          Number of worker threads [default: number of logical CPUs]
+
+      --hidden
+          Include hidden files and directories
+
+      --no-hidden
+          Skip hidden files and directories (overrides `hidden = true` in the config)
+
+      --no-ignore
+          Do not respect .gitignore and .ignore files
+
+      --ignore
+          Respect .gitignore and .ignore files (overrides `no_ignore = true` in the config)
+
+  -L, --follow
+          Follow symbolic links (symlink loops are detected and skipped)
+
+  -x, --one-file-system
+          Do not cross into other file systems (like du -x; skips /proc etc. when scanning /)
+
+  -q, --quiet
+          Do not show progress output
+
+  -v, --verbose...
+          Show more log output on stderr (-v warnings, -vv info, -vvv debug, -vvvv trace)
+
+Examples:
+  fsight scan                       Current directory, 3 levels, top 10 per directory
+  fsight scan ~ -d 1                Only the direct children of your home directory
+  fsight scan /var -n 5 --min-size 100M
+                                    Five largest entries per directory, at least 100 MiB
+  fsight scan . --hidden --no-ignore
+                                    Include hidden and git-ignored files (like du)
+  fsight scan --apparent-size       File lengths instead of allocated disk space
+  fsight scan --json | jq '.tree.size'

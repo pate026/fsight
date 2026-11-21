@@ -108,3 +108,19 @@ including a check that no file is modified).
   disk space.
 
 **Tests:** 152 in total — 90 unit, 3 doc, 59 integration (4 for stats, including a snapshot).
+
+## Phase 7 — Configuration and UX polish
+
+* `config.rs`: config file at `$XDG_CONFIG_HOME/fsight/config.toml` (fallback
+  `~/.config/...`), `FSIGHT_*` environment variables and `NO_COLOR`, merged in
+  layers (CLI > env > file > defaults). Clear errors with file path, line and
+  column, or the variable name. Unknown keys are rejected.
+* `--print-config` prints the merged settings as valid TOML, with a comment
+  naming the config file.
+* `fsight completions <shell>` (bash, zsh, fish, elvish, PowerShell), safe on
+  a broken pipe.
+* Red `error:` prefix; spinner checked on a pseudo-terminal; help texts with
+  examples for every subcommand, under insta snapshot tests.
+
+**Tests:** 169 in total — 98 unit, 3 doc, 68 integration (12 for config and
+CLI, including 8 help-screen snapshots).

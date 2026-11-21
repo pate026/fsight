@@ -59,6 +59,8 @@ pub enum Role {
     Header,
     /// Warnings printed to stderr.
     Warning,
+    /// The `error:` prefix on stderr.
+    Error,
 }
 
 impl Role {
@@ -68,7 +70,7 @@ impl Role {
             Role::Symlink => Style::new().cyan(),
             Role::Size | Role::Header => Style::new().bold(),
             Role::Bar | Role::LineNumber => Style::new().green(),
-            Role::Match => Style::new().red().bold(),
+            Role::Match | Role::Error => Style::new().red().bold(),
             Role::Path => Style::new().magenta(),
             Role::Dim => Style::new().dimmed(),
             Role::Warning => Style::new().yellow().bold(),

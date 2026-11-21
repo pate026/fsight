@@ -122,11 +122,13 @@ impl TreeRenderer<'_> {
         let palette = self.palette;
         write!(
             self.out,
-            "{} {pct:>3}%  {}  {}",
+            "{} {pct:>3}%  {}  ",
             palette.paint(Role::Size, &size_text),
             palette.paint(Role::Bar, &bar),
-            palette.paint(Role::Dim, prefix),
         )?;
+        if !prefix.is_empty() {
+            write!(self.out, "{}", palette.paint(Role::Dim, prefix))?;
+        }
         match role {
             Some(role) => writeln!(self.out, "{}", palette.paint(role, name)),
             None => writeln!(self.out, "{name}"),
