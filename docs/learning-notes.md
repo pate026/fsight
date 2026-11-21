@@ -59,7 +59,7 @@ one behind, so the code can then call `self.add_file(...)` (which needs
 **Clone when you really need a copy.** `find::run` needs the walk options
 with one field changed. It writes
 `WalkOptions { max_depth: options.max_depth, ..ctx.walk.clone() }`
-([src/commands/find.rs:337-376](../src/commands/find.rs)). The `..` "struct
+([src/commands/find.rs:359-397](../src/commands/find.rs)). The `..` "struct
 update" syntax fills the other fields from a clone. Cloning is explicit in Rust,
 so you always see where copies happen.
 
@@ -98,7 +98,7 @@ pub enum Error {
 `#[source]` records the underlying cause without repeating it in the message.
 `impl From<regex::Error> for Error` (lines 85-89) is what lets
 `RegexBuilder::new(..).build()?` work inside a function that returns
-`fsight::Result` ([src/commands/find.rs:116-152](../src/commands/find.rs)): `?`
+`fsight::Result` ([src/commands/find.rs:122-158](../src/commands/find.rs)): `?`
 calls `From::from` on the error.
 
 **The binary uses anyhow.** An application mostly wants to *report* errors,
@@ -116,7 +116,7 @@ FSIGHT_THREADS: ...`. `is_broken_pipe` (lines 131-141) walks the chain and
 the pipe".
 
 **`?` also works on `Option`.** In `Filter::check`
-([src/commands/find.rs:266-309](../src/commands/find.rs)), the function returns
+([src/commands/find.rs:284-331](../src/commands/find.rs)), the function returns
 `Option<FoundEntry>`, and `let meta = entry.metadata()?;` returns `None` early
 when the metadata cannot be read.
 
@@ -190,7 +190,7 @@ function as a parameter, which is how the tests can pass a fake one.
 **Generic over library traits.** `search_lines<R: BufRead>`
 ([src/commands/grep.rs:184-244](../src/commands/grep.rs)) works with a real
 file, with a `&[u8]` in tests, and with a custom reader that produces data on
-the fly (lines 703-707). `parse_enum<T: ValueEnum>`
+the fly (lines 708-712). `parse_enum<T: ValueEnum>`
 ([src/config.rs:308-318](../src/config.rs)) parses any of clap's value enums
 and even lists their possible values in the error message.
 
@@ -256,7 +256,7 @@ and the work is spread over threads
 
 **Small helpers worth knowing:** `bool::then` / `then_some` turn a bool into
 an `Option` ([src/output/color.rs:112](../src/output/color.rs)),
-`Option::is_none_or` ([src/commands/find.rs:156](../src/commands/find.rs)),
+`Option::is_none_or` ([src/commands/find.rs:160](../src/commands/find.rs)),
 `usize::saturating_add_signed` ([src/tui/app.rs:170](../src/tui/app.rs)).
 
 ## 5. Enums and pattern matching
@@ -276,7 +276,7 @@ enum FileOutcome {
 ```
 
 ([src/commands/grep.rs:252-259](../src/commands/grep.rs)). It is matched in
-`record` (lines 439-470). Other examples: `ScanState` in the TUI
+`record` (lines 444-475). Other examples: `ScanState` in the TUI
 ([src/tui/app.rs:51-60](../src/tui/app.rs)), and `SizeFilter` with a `matches`
 method ([src/size.rs:132-152](../src/size.rs)).
 
@@ -306,11 +306,11 @@ let Some(item) = map(&entry) else {
 ```
 
 ([src/walk.rs:337-377](../src/walk.rs), and
-[src/commands/find.rs:130](../src/commands/find.rs)).
+[src/commands/find.rs:134](../src/commands/find.rs)).
 
 **`matches!`** is a match that returns a bool
 ([src/error.rs:77-83](../src/error.rs),
-[src/commands/find.rs:43-52](../src/commands/find.rs)).
+[src/commands/find.rs:44-53](../src/commands/find.rs)).
 
 **Let chains** (new in Rust 2024) combine `if let` with conditions:
 `if let Some(limit) = options.max_filesize && entry.metadata()?.len > limit`
@@ -327,9 +327,9 @@ let Some(item) = map(&entry) else {
 * `pub use error::{Error, Result};` (lib.rs line 35) *re-exports* the error
   types, so users write `fsight::Error` instead of `fsight::error::Error`.
 * Paths: `crate::` starts at the crate root, `super::` at the parent module
-  (`use super::Context;` in [src/commands/find.rs:21](../src/commands/find.rs)).
+  (`use super::Context;` in [src/commands/find.rs:22](../src/commands/find.rs)).
 * Helpers stay private, for example `fn has_uppercase_literal`
-  ([src/commands/find.rs:171-185](../src/commands/find.rs)). `display_path` is
+  ([src/commands/find.rs:177-191](../src/commands/find.rs)). `display_path` is
   `pub` because grep, dupes and stats use it too.
 * `pub(crate)` means "visible anywhere in this crate, but not outside". The
   TUI's test helpers live in `pub(crate) mod tests`
@@ -392,7 +392,7 @@ to Sync data plus an `AtomicU64`), and `&M` (Send because `M: Sync`). Each
 link of that chain is checked at compile time.
 
 **Scoped threads may borrow.** `std::thread::scope` (walk.rs line 315, grep's
-`search_files` at [src/commands/grep.rs:374-437](../src/commands/grep.rs))
+`search_files` at [src/commands/grep.rs:379-442](../src/commands/grep.rs))
 guarantees that the threads finish before the scope ends. So they can borrow
 local variables (`&files`, `&regex`, `&cursor`) without `Arc`. A `Regex` is
 `Sync`, so all grep workers can use the same one.
@@ -407,7 +407,7 @@ in order. fsight uses `crossbeam-channel`.
   of filling memory. `for item in rx` ends when **every** sender has been
   dropped. Each worker gets a `tx.clone()`, and the original `tx` is moved
   into the spawned thread and dropped when it ends.
-* **Results out of order, printed in order** (grep.rs lines 398-431):
+* **Results out of order, printed in order** (grep.rs lines 403-436):
 
   ```rust
   let index = cursor.fetch_add(1, Ordering::Relaxed);   // claim a file
@@ -464,7 +464,7 @@ lock:
   because each counter is an independent statistic; no other memory depends
   on its value.
 * The grep cursor: `fetch_add` returns the previous value, so every index is
-  handed out exactly once ([src/commands/grep.rs:404](../src/commands/grep.rs)).
+  handed out exactly once ([src/commands/grep.rs:409](../src/commands/grep.rs)).
 * A `static` atomic: `static TERMINAL_ACTIVE: AtomicBool`
   ([src/tui/mod.rs:58-61](../src/tui/mod.rs)) is shared by the whole program,
   including the panic hook. `restore_terminal` (lines 165-175) uses
@@ -489,7 +489,7 @@ comes from.
   options, flag and counters.
 * `Entry<'w>` ([src/walk.rs:202-247](../src/walk.rs)) borrows the walker's
   `ErrorLog`, so `entry.metadata()` can record a failure itself.
-* `Printer<'w>` ([src/commands/grep.rs:480-487](../src/commands/grep.rs)) and
+* `Printer<'w>` ([src/commands/grep.rs:485-492](../src/commands/grep.rs)) and
   `TreeRenderer<'a>` ([src/output/tree.rs:46-51](../src/output/tree.rs)) borrow
   their output writer.
 * `Painted<'a, T: ?Sized>` ([src/output/color.rs:105-131](../src/output/color.rs))
@@ -502,7 +502,7 @@ comes from.
 pub fn display_path<'p>(path: &'p Path, root: &Path) -> &'p Path
 ```
 
-([src/commands/find.rs:209-216](../src/commands/find.rs)). The result is a
+([src/commands/find.rs:227-234](../src/commands/find.rs)). The result is a
 part of `path` (with `./` removed), never of `root`, and the `'p` tells the
 compiler exactly that. Similarly, `parse_part<'a>(text: &'a str, whole_input:
 &str) -> ... &'a str` ([src/duration.rs:55-87](../src/duration.rs)) returns
@@ -543,7 +543,7 @@ parameter, so tests can pass a fake:
   as 0×0 (lines 352-372).
 * grep's streaming test uses a custom `Read` implementation that produces
   27 MB of lines without ever storing them
-  ([src/commands/grep.rs:703-707](../src/commands/grep.rs)).
+  ([src/commands/grep.rs:708-712](../src/commands/grep.rs)).
 
 **Integration tests** in `tests/` are separate crates that run the compiled
 binary with `assert_cmd`. The `Fixture` helper
@@ -598,7 +598,7 @@ gates after each one (see the readme).
 5. **Streaming JSON for grep (`--json-lines`).** Print one JSON object per
    file as soon as it is ready, instead of one document at the end. *Hints:*
    `grep::search_files` already takes a *sink* closure
-   ([src/commands/grep.rs:374-437](../src/commands/grep.rs)); write a sink that
+   ([src/commands/grep.rs:379-442](../src/commands/grep.rs)); write a sink that
    serializes each `FileMatches` with `serde_json::to_writer` followed by a
    newline. Test it by parsing every output line separately.
 

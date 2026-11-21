@@ -435,3 +435,12 @@ installed). Its YAML was checked by parsing it.
 As the brief specifies: thin LTO, one codegen unit, stripped symbols. On this
 machine `cargo build --release` takes about 2 minutes from a warm dependency
 cache (peak memory about 400 MB), and the binary is 4.5 MiB.
+
+## Phase 11 — Benchmarks
+
+### D59. Two optimizations found by benchmarking
+* Sorting paths now compares bytes with `/` as the lowest byte
+  (`find::compare_paths`). It gives the same order as `Path::cmp` for the
+  normalized paths the walker produces, which a property test checks, and is
+  much cheaper. Listing all of /usr went from 0.67 s to 0.49 s.
+* `find` computes match highlights only when colors are on (0.49 s → 0.46 s).

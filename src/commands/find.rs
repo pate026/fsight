@@ -8,6 +8,7 @@
 //! a [`regex::bytes::Regex`], which can match file names that are not valid
 //! UTF-8 and tells us *where* it matched, for highlighting.
 
+use std::cmp::Ordering;
 use std::io::{self, Write};
 use std::ops::Range;
 use std::path::Path;
@@ -69,6 +70,8 @@ pub enum PatternSyntax {
 
 /// Options of `fsight find`.
 #[derive(Debug, Clone, PartialEq, Eq)]
+// Independent switches mirroring the command-line flags.
+#[allow(clippy::struct_excessive_bools)]
 pub struct FindOptions {
     pub pattern: Option<String>,
     pub syntax: PatternSyntax,
@@ -85,6 +88,8 @@ pub struct FindOptions {
     pub long: bool,
     /// Read size and modification time even without `--long` (for JSON).
     pub with_metadata: bool,
+    /// Compute match positions (only useful when the output is colored).
+    pub highlight: bool,
 }
 
 impl Default for FindOptions {
@@ -102,6 +107,7 @@ impl Default for FindOptions {
             max_depth: None,
             long: false,
             with_metadata: false,
+            highlight: true,
         }
     }
 }
@@ -206,6 +212,18 @@ pub fn normalize_extensions(extensions: &[String]) -> Vec<String> {
         .collect()
 }
 
+/// Orders paths component by component (`src/x` before `src-old/y`), like
+/// `Path::cmp`, but much faster: it compares the bytes with `/` treated as
+/// the smallest byte. For the normalized paths the walker produces (no `.` or
+/// `..` components, no doubled slashes) both give the same order, without
+/// splitting every path into components for each of the millions of
+/// comparisons a large sort makes. (A path never contains a NUL byte, so
+/// mapping `/` to 0 cannot collide with anything.)
+pub fn compare_paths(a: &[u8], b: &[u8]) -> Ordering {
+    let key = |byte: &u8| if *byte == b'/' { 0 } else { *byte };
+    a.iter().map(key).cmp(b.iter().map(key))
+}
+
 /// Paths below `.` are shown without the `./` prefix, like fd does.
 pub fn display_path<'p>(path: &'p Path, root: &Path) -> &'p Path {
     if root == Path::new(".") {
@@ -298,7 +316,11 @@ impl Filter<'_> {
         };
 
         let path = shown.to_string_lossy().into_owned();
-        let highlight = self.highlight(&path, entry);
+        let highlight = if self.options.highlight {
+            self.highlight(&path, entry)
+        } else {
+            None
+        };
         Some(FoundEntry {
             kind: meta.as_ref().map_or(kind, |m| m.kind),
             size: meta.as_ref().map(|m| m.len),
@@ -365,9 +387,8 @@ pub fn run(ctx: &Context<'_>, root: &Path, options: &FindOptions) -> Result<Find
     let summary = walker.run(|entry| filter.check(entry), |found| matches.push(found));
 
     // The parallel walk finds entries in no particular order; sort for stable
-    // output. Comparing as paths (component by component) keeps a directory's
-    // contents together: `src/x` sorts before `src-old/y`.
-    matches.sort_unstable_by(|a, b| Path::new(&a.path).cmp(Path::new(&b.path)));
+    // output, keeping each directory's contents together.
+    matches.sort_unstable_by(|a, b| compare_paths(a.path.as_bytes(), b.path.as_bytes()));
     Ok(FindReport {
         matches,
         summary,
@@ -531,6 +552,34 @@ mod tests {
             normalize_extensions(&[".RS".into(), "toml".into(), ".".into()]),
             ["rs", "toml"]
         );
+    }
+
+    #[test]
+    fn paths_sort_by_component() {
+        let mut paths = vec!["src-old/y", "src/x/z", "src", "a.b", "src/x", "ab", "a/b"];
+        paths.sort_by(|a, b| compare_paths(a.as_bytes(), b.as_bytes()));
+        assert_eq!(
+            paths,
+            ["a/b", "a.b", "ab", "src", "src/x", "src/x/z", "src-old/y"]
+        );
+    }
+
+    proptest::proptest! {
+        /// For normalized relative paths, the fast comparison agrees with `Path::cmp`.
+        #[test]
+        fn fast_path_order_matches_path_cmp(
+            a in proptest::collection::vec("[a-c.-]{1,3}", 1..4),
+            b in proptest::collection::vec("[a-c.-]{1,3}", 1..4),
+        ) {
+            let (a, b) = (a.join("/"), b.join("/"));
+            // `Path::cmp` treats `.` and `..` specially; the walker never produces them.
+            let normalized = |p: &str| !p.split('/').any(|c| c == "." || c == "..");
+            proptest::prop_assume!(normalized(&a) && normalized(&b));
+            proptest::prop_assert_eq!(
+                compare_paths(a.as_bytes(), b.as_bytes()),
+                Path::new(&a).cmp(Path::new(&b))
+            );
+        }
     }
 
     #[test]

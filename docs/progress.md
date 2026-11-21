@@ -178,3 +178,13 @@ on an in-memory terminal from 0×0 up), 3 doc, 69 integration.
   on this machine.
 
 **Tests:** 190 (unchanged).
+
+## Phase 11 — Benchmarks (optional)
+
+* `docs/benchmarks.md` and `docs/benchmark.py`: warm-cache comparison with du,
+  GNU find, GNU grep, fd and ripgrep on /usr, including the cases where fsight
+  is slower.
+* Two optimizations (path sorting, conditional highlighting), with a new unit
+  test and a new property test for the path ordering.
+
+**Tests:** 192 in total.

@@ -27,7 +27,7 @@ use regex::bytes::{Regex, RegexBuilder};
 use serde::Serialize;
 
 use super::Context;
-use super::find::display_path;
+use super::find::{compare_paths, display_path};
 use crate::error::{Error, Result};
 use crate::output::RenderText;
 use crate::output::color::{Palette, Role};
@@ -367,7 +367,12 @@ pub fn collect_files(
         },
         |path| files.push(path),
     );
-    files.sort_unstable();
+    files.sort_unstable_by(|a, b| {
+        compare_paths(
+            a.as_os_str().as_encoded_bytes(),
+            b.as_os_str().as_encoded_bytes(),
+        )
+    });
     Ok((files, summary))
 }
 

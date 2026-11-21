@@ -172,6 +172,7 @@ fn run_find(ctx: &Context<'_>, args: &FindArgs, presentation: Presentation) -> R
         max_depth: args.max_depth,
         long: args.long,
         with_metadata: presentation.format.is_json(),
+        highlight: presentation.palette.is_enabled(),
     };
     let report = with_progress(ctx, presentation, ("entry", "entries"), || {
         find::run(ctx, &args.path, &options)
