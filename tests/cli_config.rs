@@ -234,3 +234,22 @@ fn completions_are_generated_for_common_shells() {
     }
     f.cmd().args(["completions", "tcsh"]).assert().code(2);
 }
+
+#[test]
+fn the_explorer_refuses_to_start_without_a_terminal() {
+    // In tests stdout is a pipe, so the TUI must exit cleanly with a clear message
+    // instead of drawing escape codes into the pipe.
+    let f = Fixture::new();
+    f.cmd()
+        .arg("tui")
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("needs an interactive terminal"));
+    f.cmd()
+        .args(["tui", "--json"])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains(
+            "interactive and has no JSON output",
+        ));
+}

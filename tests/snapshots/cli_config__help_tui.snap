@@ -18,8 +18,11 @@ Options:
 
           Possible values:
           - size:     Largest first
-          - name:     Alphabetical
+          - name:     Alphabetical, ignoring case
           - modified: Most recently modified first
+
+      --apparent-size
+          Count file lengths instead of the disk space actually allocated
 
   -h, --help
           Print help (see a summary with '-h')

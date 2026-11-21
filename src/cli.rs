@@ -341,6 +341,10 @@ pub struct TuiArgs {
     /// Initial sort order [default: size]
     #[arg(long, value_enum, value_name = "ORDER")]
     pub sort: Option<SortMode>,
+
+    /// Count file lengths instead of the disk space actually allocated
+    #[arg(long)]
+    pub apparent_size: bool,
 }
 
 /// Arguments of `fsight completions`.

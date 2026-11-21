@@ -124,3 +124,23 @@ including a check that no file is modified).
 
 **Tests:** 169 in total — 98 unit, 3 doc, 68 integration (12 for config and
 CLI, including 8 help-screen snapshots).
+
+## Phase 8 — TUI
+
+* `tui/app.rs`: pure state with navigation, three sort modes, live filter,
+  info panel, help and status messages, plus a cached visible list and a pure
+  scroll function.
+* `tui/events.rs`: key mapping (arrows and vim keys, PgUp/PgDn, g/G, Enter/l,
+  Backspace/h, s, /, Esc, i, ?, q, Ctrl-C) with a separate filter mode.
+* `tui/ui.rs`: header (path, sizes, sort, filter), rows with size,
+  percentage, bar and name, an info panel, a help popup, and scanning/failure
+  screens. Saturating layout math.
+* `tui/mod.rs`: background scanner thread with progress over a channel, a
+  responsive event loop, terminal restore through a guard, a panic hook and an
+  idempotent restore.
+* Checked on a pseudo-terminal: navigation, sort, filter, info, help, resizes
+  down to 1×1 and back, quitting, and an injected panic all leave the terminal
+  restored.
+
+**Tests:** 190 in total — 118 unit (20 for the TUI: state, keys, and rendering
+on an in-memory terminal from 0×0 up), 3 doc, 69 integration.

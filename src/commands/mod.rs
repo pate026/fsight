@@ -18,7 +18,9 @@ use std::sync::atomic::AtomicBool;
 use clap::CommandFactory;
 use serde::Serialize;
 
-use crate::cli::{Cli, Command, DupesArgs, FindArgs, GlobalArgs, GrepArgs, ScanArgs, StatsArgs};
+use crate::cli::{
+    Cli, Command, DupesArgs, FindArgs, GlobalArgs, GrepArgs, ScanArgs, StatsArgs, TuiArgs,
+};
 use crate::config::Config;
 use crate::error::{Error, Result};
 use crate::output::color::{Palette, Role};
@@ -111,13 +113,7 @@ pub fn run(cli: &Cli, config: &Config, cancel: &AtomicBool) -> Result<Outcome> {
         Command::Dupes(args) => run_dupes(&ctx, args, presentation),
         Command::Stats(args) => run_stats(&ctx, args, presentation),
         Command::Completions(args) => print_completions(args.shell),
-        Command::Tui(_) => {
-            let _ = writeln!(
-                io::stderr(),
-                "fsight: this subcommand is not implemented yet"
-            );
-            Ok(Outcome::Success)
-        }
+        Command::Tui(args) => run_tui(&ctx, args, config, presentation),
     }
 }
 
@@ -278,6 +274,26 @@ fn run_stats(ctx: &Context<'_>, args: &StatsArgs, presentation: Presentation) ->
     })?;
     print_report(&report, presentation)?;
     Ok(finish(report.summary, Outcome::Success, presentation))
+}
+
+fn run_tui(
+    ctx: &Context<'_>,
+    args: &TuiArgs,
+    config: &Config,
+    presentation: Presentation,
+) -> Result<Outcome> {
+    if presentation.format.is_json() {
+        return Err(Error::Config(
+            "`fsight tui` is interactive and has no JSON output; try `fsight scan --json`".into(),
+        ));
+    }
+    let options = crate::tui::TuiOptions {
+        sort: config.tui.sort,
+        apparent: args.apparent_size,
+        colors: config.color.should_color(io::stdout().is_terminal()),
+    };
+    crate::tui::run(ctx, &args.path, options)?;
+    Ok(Outcome::Success)
 }
 
 /// Prints a completion script for `shell`.

@@ -36,8 +36,8 @@ pub struct ScanOptions {
     pub min_size: u64,
 }
 
-/// Index of a [`Node`] inside a [`DiskTree`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+/// Index of a [`Node`] inside a [`DiskTree`]. The default is the root.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct NodeId(usize);
 
 /// One file or directory in a [`DiskTree`].

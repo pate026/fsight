@@ -366,3 +366,55 @@ because `clap_complete` panics if writing fails, and
 * The spinner was checked on a real pseudo-terminal: it updates about ten times
   a second, is erased before results are printed, and stays off with `-q`,
   `--json` and `-v`.
+
+## Phase 8 — TUI
+
+### D51. Pure state, cached view
+`App` holds the whole state. Transitions are methods that only change
+fields. The filtered and sorted list of the current directory (`visible`)
+is recomputed only when navigation, sorting or filtering changes it, not on
+every frame. Scrolling is a pure function (`scroll_offset`) that moves the
+window as little as possible to keep the cursor visible.
+
+### D52. Background scan over a channel
+A scanner thread builds the `DiskTree` (with the usual walker threads below
+it) and sends `Progress` every 100 ms and `Finished` at the end through a
+crossbeam channel. The UI thread drains the channel, draws, and waits at most
+100 ms for a key, so it stays responsive and `q` works during the scan.
+Quitting sets the shared cancellation flag, so the walker stops at once and
+the scoped threads join quickly.
+
+### D53. Terminal restoration, three ways
+1. `RestoreOnDrop`, a guard whose `Drop` restores the terminal on normal
+   return, on `?` errors, and during panic unwinding.
+2. A panic hook that restores the terminal *before* the default hook prints
+   the message, so the message is readable on the normal screen.
+3. `restore_terminal` runs only once (guarded by a `static AtomicBool`). After
+   a panic, the hook and the guard both call it, and a second "leave alternate
+   screen" sequence could move the cursor over the message.
+Verified on a pseudo-terminal: after quitting, and after a deliberately
+injected panic (removed again afterwards), the alternate screen is left
+exactly once and canonical mode and echo are restored.
+
+### D54. Guard rails
+`fsight tui` refuses to start when stdout is not a terminal, and with
+`--json`. The path is checked before switching to the alternate screen, so
+errors are printed normally.
+
+### D55. Interaction details
+* Entering or leaving a directory clears the filter. Going up puts the cursor
+  back on the directory you came from.
+* Opening a file, or going up from the scan root, does nothing but shows a
+  short message in the footer.
+* In filter mode letters are text (`j` types a "j"). Arrow keys still move,
+  Enter keeps the filter, Esc clears it.
+* The help popup closes with `?`, Esc, Enter or `q`. Ctrl-C quits in every
+  mode.
+* Name sorting ignores case. "Modified" sorting puts the newest first.
+* `--apparent-size` was added for parity with `scan`.
+* Colors follow the global policy. Bold and reverse video are kept without
+  colors, so the cursor stays visible.
+
+### D56. Memory
+Because the user can navigate anywhere, the TUI keeps the full tree (about
+100 bytes per entry plus the name, comparable to ncdu).
