@@ -144,3 +144,25 @@ CLI, including 8 help-screen snapshots).
 
 **Tests:** 190 in total — 118 unit (20 for the TUI: state, keys, and rendering
 on an in-memory terminal from 0×0 up), 3 doc, 69 integration.
+
+## Phase 9 — Documentation
+
+* `readme.md`: what fsight is, installation, every command with real output
+  captured on this machine (including a TUI frame rendered by the real UI
+  code), options tables, global flags, configuration reference, exit codes,
+  JSON recipes, and an honest comparison with dust, fd, ripgrep and fdupes.
+* `docs/architecture.md`: module map and dependency direction, data flow of a
+  command, the shared walker (map/consume), the threading model of every
+  command and of the TUI, memory use, testing strategy.
+* `docs/learning-notes.md`: eleven sections for a Rust beginner (ownership,
+  errors, traits and generics, iterators and closures, enums and matching,
+  modules, Send/Sync, channels, Arc/atomics, lifetimes, testing), each
+  pointing to exact files and line ranges, which a script checked. The
+  Send/Sync section shows the real compiler error from an experiment, which
+  was removed again afterwards. It ends with five exercises.
+* Before writing, checked the brief's hard rules over all of `src/`: no
+  `unwrap`/`expect`/`panic!` outside tests, no `unsafe`,
+  `forbid(unsafe_code)` in both crate roots, and no file-writing calls
+  outside tests.
+
+**Tests:** 190 (unchanged; documentation only).
